@@ -1,0 +1,28 @@
+apps:
+  - name: "Annotations Manager"
+    url: "https://domocardannotations.streamlit.app/"
+    description: "Add and modify annotations"
+    tags: ["BI"]
+    category: "Tools"
+    favorite: true
+
+  - name: "Snowflake Free Text"
+    url: "https://freetexttosql.streamlit.app/"
+    description: "Get free text to sql queries"
+    tags: ["BI", "Data"]
+    category: "Tools"
+    favorite: true
+
+  - name: "ETL Executor"
+    url: "https://etlexecutor.streamlit.app/"
+    description: "Run Domo ETLs"
+    tags: ["BI", "Data"]
+    category: "Tools"
+    favorite: true
+
+  - name: "View Reports Processor"
+    url: "https://viewreports.streamlit.app/"
+    description: "Process view reports"
+    tags: ["BI", "Data", "Analytics"]
+    category: "Tools"
+    favorite: false
