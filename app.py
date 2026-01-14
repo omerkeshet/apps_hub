@@ -9,6 +9,8 @@ import yaml
 
 # -----------------------------
 # Page config
+# - Compass only in browser tab name + icon
+# - No emojis in page content (except Favorites section header)
 # -----------------------------
 st.set_page_config(
     page_title="Streamlit Hub",
@@ -22,7 +24,9 @@ st.set_page_config(
 APPS_FILE = Path("data/apps.yaml")
 
 # -----------------------------
-# Styling (mirrors your sample)
+# Styling (same language as your sample)
+# + fixed-size hub cards
+# + inline tags row
 # -----------------------------
 st.markdown(
     """
@@ -62,7 +66,7 @@ st.markdown(
       .muted { color: rgba(49, 51, 63, 0.72); }
       .tiny  { font-size: 0.82rem; color: rgba(49, 51, 63, 0.65); }
 
-      /* Card containers */
+      /* Card containers (Streamlit bordered containers) */
       div[data-testid="stVerticalBlockBorderWrapper"]{
         border: 1px solid rgba(49, 51, 63, 0.14) !important;
         border-radius: 18px !important;
@@ -85,33 +89,7 @@ st.markdown(
         margin: 0 0 0.9rem 0;
       }
 
-      /* Primary action button (Open) - gradient */
-      .stLinkButton a, .stButton button[kind="primary"]{
-        background: linear-gradient(180deg, #1f4fd8, #1a3fa8) !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 14px !important;
-        padding: 0.66rem 1rem !important;
-        font-weight: 800 !important;
-        text-decoration: none !important;
-        display: inline-block !important;
-        width: 100% !important;
-        text-align: center !important;
-      }
-      .stLinkButton a:hover, .stButton button[kind="primary"]:hover{
-        background: linear-gradient(180deg, #245ef5, #1f4fd8) !important;
-        color: white !important;
-      }
-
-      /* Text input + select spacing tweaks */
-      div[data-testid="stTextInput"] input {
-        border-radius: 12px !important;
-      }
-      div[data-testid="stMultiSelect"] div {
-        border-radius: 12px !important;
-      }
-
-      /* Small chip */
+      /* Chip */
       .chip {
         display: inline-block;
         padding: 6px 10px;
@@ -122,6 +100,53 @@ st.markdown(
         font-weight: 750;
         margin-right: 6px;
         margin-top: 6px;
+        white-space: nowrap;
+      }
+
+      /* Tags row container */
+      .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 6px;
+        margin-bottom: 10px;
+      }
+
+      /* Fixed-size hub card */
+      .hub-card {
+        min-height: 220px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .hub-card h3 {
+        margin-top: 0.15rem !important;
+        margin-bottom: 0.15rem !important;
+      }
+
+      .hub-desc {
+        color: rgba(49, 51, 63, 0.72);
+        font-size: 0.95rem;
+        margin: 0.25rem 0 0.75rem 0;
+      }
+
+      /* Gradient primary link button */
+      .primary-link {
+        background: linear-gradient(180deg, #1f4fd8, #1a3fa8);
+        color: #fff !important;
+        border: none;
+        border-radius: 14px;
+        padding: 0.66rem 1rem;
+        font-weight: 800;
+        text-decoration: none !important;
+        display: block;
+        width: 100%;
+        text-align: center;
+      }
+      .primary-link:hover{
+        background: linear-gradient(180deg, #245ef5, #1f4fd8);
+        color: #fff !important;
       }
 
       /* Footer trademark */
@@ -141,6 +166,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
 # -----------------------------
 # Helpers
 # -----------------------------
@@ -150,7 +176,6 @@ def load_apps() -> List[Dict[str, Any]]:
     data = yaml.safe_load(APPS_FILE.read_text(encoding="utf-8")) or {}
     apps = data.get("apps", []) or []
 
-    # Normalize
     for a in apps:
         a.setdefault("name", "Untitled App")
         a.setdefault("url", "")
@@ -159,7 +184,7 @@ def load_apps() -> List[Dict[str, Any]]:
         a.setdefault("category", "Other")
         a.setdefault("favorite", False)
 
-    # Stable ordering: favorites first, then category, then name
+    # favorites first, then category, then name
     apps.sort(key=lambda x: (not bool(x.get("favorite")), str(x.get("category")), str(x.get("name"))))
     return apps
 
@@ -193,10 +218,37 @@ def collect_tags(apps: List[Dict[str, Any]]) -> List[str]:
     return sorted(tags)
 
 
+def render_app_card(app: Dict[str, Any]) -> None:
+    name = app.get("name", "Untitled App")
+    desc = app.get("description", "")
+    cat = app.get("category", "Other")
+    tags = app.get("tags") or []
+    url = app.get("url", "")
+
+    chips_html = f"<span class='chip'>{cat}</span>" + "".join(
+        [f"<span class='chip'>{t}</span>" for t in tags]
+    )
+
+    # Full card HTML so we can keep tags in one row + fixed height
+    card_html = f"""
+      <div class="hub-card">
+        <div>
+          <h3>{name}</h3>
+          <div class="hub-desc">{desc}</div>
+          <div class="chip-row">{chips_html}</div>
+        </div>
+        <div>
+          {"<a class='primary-link' href='" + url + "' target='_blank' rel='noopener noreferrer'>Open app →</a>" if url else "<div class='hub-desc'>Missing URL in apps.yaml</div>"}
+        </div>
+      </div>
+    """
+    st.markdown(card_html, unsafe_allow_html=True)
+
+
 # -----------------------------
-# Header
+# Header (no emoji)
 # -----------------------------
-st.title("🧭 Streamlit Hub")
+st.title("Streamlit Hub")
 st.markdown(
     "<div class='muted'>Open one place, see all your Streamlit Cloud apps, and jump to what you need.</div>",
     unsafe_allow_html=True,
@@ -205,9 +257,7 @@ st.write("")
 
 apps = load_apps()
 if not apps:
-    st.error(
-        "No apps found. Add your apps to `data/apps.yaml` and redeploy.",
-    )
+    st.error("No apps found. Add your apps to `data/apps.yaml` and redeploy.")
     st.stop()
 
 # -----------------------------
@@ -215,28 +265,17 @@ if not apps:
 # -----------------------------
 with st.container(border=True):
     st.markdown("<div class='label'>Find an app</div>", unsafe_allow_html=True)
-    st.markdown(
-        "<div class='desc'>Search by name, tag, category, or description.</div>",
-        unsafe_allow_html=True,
-    )
+    st.markdown("<div class='desc'>Search by name, tag, category, or description.</div>", unsafe_allow_html=True)
 
     q = st.text_input("Search", placeholder="Type to search…", label_visibility="collapsed")
 
     c1, c2, c3 = st.columns([1.05, 1.05, 0.9], vertical_alignment="center")
     with c1:
         categories = collect_categories(apps)
-        selected_categories = st.multiselect(
-            "Categories",
-            options=categories,
-            default=categories,
-        )
+        selected_categories = st.multiselect("Categories", options=categories, default=categories)
     with c2:
         tags = collect_tags(apps)
-        selected_tags = st.multiselect(
-            "Tags",
-            options=tags,
-            default=[],
-        )
+        selected_tags = st.multiselect("Tags", options=tags, default=[])
     with c3:
         favorites_only = st.toggle("Favorites only", value=False)
 
@@ -258,49 +297,36 @@ for a in apps:
 favorites = [a for a in filtered if a.get("favorite", False)]
 others = [a for a in filtered if not a.get("favorite", False)]
 
-# -----------------------------
-# Render
-# -----------------------------
-def render_cards(title: str, items: List[Dict[str, Any]]) -> None:
+
+def render_section(title_html: str, items: List[Dict[str, Any]]) -> None:
     if not items:
         return
-    st.markdown(f"<div class='label'>{title}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='label'>{title_html}</div>", unsafe_allow_html=True)
     st.write("")
 
     cols = st.columns(2, gap="large")
     for i, app in enumerate(items):
         with cols[i % 2]:
             with st.container(border=True):
-                st.markdown(f"### {app.get('name')}")
-                if app.get("description"):
-                    st.caption(app.get("description"))
-
-                # chips: category + tags
-                cat = app.get("category", "Other")
-                st.markdown(f"<span class='chip'>{cat}</span>", unsafe_allow_html=True)
-                for t in (app.get("tags") or []):
-                    st.markdown(f"<span class='chip'>{t}</span>", unsafe_allow_html=True)
-
-                st.write("")
-                url = app.get("url", "")
-                if url:
-                    st.link_button("Open app →", url, use_container_width=True)
-                else:
-                    st.error("Missing URL in apps.yaml")
+                render_app_card(app)
 
 
+# -----------------------------
+# Render
+# -----------------------------
 if not filtered:
     st.info("No apps match your filters.")
 else:
     if favorites:
-        render_cards("⭐ Favorites", favorites)
+        # Emoji allowed here (per your request)
+        render_section("⭐ Favorites", favorites)
         st.write("")
-        render_cards("All apps", others)
+        render_section("All apps", others)
     else:
-        render_cards("All apps", filtered)
+        render_section("All apps", filtered)
 
 # -----------------------------
-# Footer trademark
+# Footer
 # -----------------------------
 st.markdown(
     """
